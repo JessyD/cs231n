@@ -33,8 +33,28 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_classes = W.shape[1]
+    num_train = X.shape[0]
 
+    for i in range(num_train):
+        scores = np.dot(X[i], W)
+        # normalise values, so that the highest number is 0. This avoids numerical
+        # problems.
+        exps = np.exp(scores - np.max(scores))
+        q = exps / np.sum(exps)# estimated class probability
+        loss += -np.log(q[y[i]])
+
+        for j in range(num_classes):
+            dW[:, j] += X[i] * q[j]
+
+        dW[:, y[i]] -= X[i]
+
+    loss /= num_train
+    dW /= num_train
+
+    # Add regularisation to the loss
+    loss += reg * np.sum(W * W)
+    dW += 2 * reg * W
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
@@ -57,8 +77,21 @@ def softmax_loss_vectorized(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    num_train = X.shape[0]
 
-    pass
+    scores = np.dot(X, W)
+    exps = np.exp(scores - np.max(scores, axis=1, keepdims=True))
+
+    # Softmax Loss
+    softmax = exps / np.sum(exps, axis=1, keepdims=True)
+    loss = np.sum(-np.log(softmax[np.arange(num_train), y][:, np.newaxis]))
+    loss /= num_train
+
+    # Weight Gradient
+    softmax[np.arange(num_train), y] -= 1
+    dW = (X.T).dot(softmax)
+    dW /= num_train
+    dW += 2 *reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 

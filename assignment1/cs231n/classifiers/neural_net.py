@@ -79,8 +79,13 @@ class TwoLayerNet(object):
         # shape (N, C).                                                             #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        # Forward pass at fist layer
+        h1 = np.dot(X, W1) + b1
+        # Activation for the first layer (ReLu function)
+        activation1layer = np.maximum(0, h1)
+        # Forward pass of the second layer
+        h2 = np.dot(activation1layer, W2) + b2
+        scores = h2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -97,8 +102,16 @@ class TwoLayerNet(object):
         # classifier loss.                                                          #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # Similar to the Softmax code exercise, normalise values so that the
+        # highest number is 0. This avoids numerical problems
+        exps = np.exp(scores - np.max(scores, axis=1, keepdims=True))
 
-        pass
+        # Softmax loss
+        activation2layer = exps / np.sum(exps, axis=1, keepdims=True)
+        correct_logprobs = -np.log(activation2layer[range(N), y])
+        data_loss = np.sum(correct_logprobs) / N
+        reg_loss = reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
+        loss = data_loss + reg_loss
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -111,7 +124,28 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # Compute the gradients
+        activation2layer[range(N), y] -= 1
+        activation2layer /= N
+
+        # propagate it back the network
+        # w2 gradient
+        grads['W2'] = np.dot(activation1layer.T, activation2layer)
+        # b2 gradient
+        grads['b2'] = np.sum(activation2layer, axis=0)
+
+        # Propagate to hidden layer
+        dhidden = np.dot(activation2layer, W2.T)
+        # Backprop ReLu non-linearity
+        dhidden[activation1layer <= 0] = 0
+
+        # w1 gradient
+        grads['W1'] = np.dot(X.T, dhidden)
+        grads['b1'] = np.sum(dhidden, axis=0)
+
+        # Regularise gradients
+        grads['W2'] += 2 * reg * W2
+        grads['W1'] += 2 * reg * W1
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -155,8 +189,9 @@ class TwoLayerNet(object):
             # them in X_batch and y_batch respectively.                             #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
+            idx = np.random.choice(num_train, batch_size, replace=True)
+            X_batch = X[idx]
+            y_batch = y[idx]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -171,9 +206,10 @@ class TwoLayerNet(object):
             # stored in the grads dictionary defined above.                         #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
-
+            self.params['W1'] -= learning_rate * grads['W1']
+            self.params['W2'] -= learning_rate * grads['W2']
+            self.params['b1'] -= learning_rate * grads['b1']
+            self.params['b2'] -= learning_rate * grads['b2']
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             if verbose and it % 100 == 0:
@@ -217,8 +253,18 @@ class TwoLayerNet(object):
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # Unpack variables from the params dictionary
+        W1, b1 = self.params['W1'], self.params['b1']
+        W2, b2 = self.params['W2'], self.params['b2']
 
-        pass
+        # Forward pass at fist layer
+        h1 = np.dot(X, W1) + b1
+        # Activation for the first layer (ReLu function)
+        activation1layer = np.maximum(0, h1)
+        # Forward pass of the second layer
+        h2 = np.dot(activation1layer, W2) + b2
+        scores = h2
+        y_pred = np.argmax(scores, axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
